@@ -17,15 +17,37 @@ Run `npm -g install licensecheck`.
 Usage
 -----
 ```
-licensecheck [-m/--missing-only] [-h/--highlight regexp] [optional dir]
-
-    -m / --missing-only : only list licenses that are unspecified
-    -f / --flat : write flattened list of dependencies
-    --tsv : write flattened list of dependencies, tab-separated, wihtout coloring (suitable for parsing)
-    -h regexp / --highlight regexp : highlight licenses entries that match the regular expression (case insensitive)
-
+licensecheck [OPTIONS] [PATH]
+    -m, --missing-only       print only packages with missing license files.
+    -h ARG, --highlight=ARG  highlight licenses which match this regular
+                             expression.
+    -f, --flat               display without tree nesting.
+    --tsv                    short for --flat --separator="\t" --fields
+                             nameversion,license,licensefile.
+    --json                   emit JSON output.
+    --fields=ARG             Comma separated list of fields to display.
+                             Available fields include name, version,
+                             nameversion, license, licensefile,
+                             simplelicensefile as well as any top-level fields
+                             in the package.json file, such as "homepage".
+    -d ARG, --separator=ARG  separator between fields.
+    --help                   Display this help.
 ```
 
+Fields
+------
+
+The `--fields` flag can be used to control which fields are printed.  Valid
+fields include:
+
+- **`name`**: The name of the package, such as `markdown`
+- **`version`**: The version of the package, such as `0.5.0`
+- **`nameversion`**: The name and version, as an `@` separated tuple: `markdown@0.5.0`
+- **`license`**: The name of the license, with URL: `MIT (http://www.opensource.org/licenses/mit-license.php)`
+- **`licensefile`**: The path to the file used to determine the license: `node_modules/markdown/package.json`
+- **`simplelicensefile`**: The path to the file used to determine the license, with `node_modules` reduced to `~` as an abbreviation: `node_modules/chalk ~ strip-ansi ~ ansi-regex/package.json`
+
+Additionally, any toplevel field in the `package.json` file is available.  These include **`description`**, **`homepage`**, et cetera.
 
 Examples
 --------
@@ -49,13 +71,24 @@ nopt (2.1.2) ── MIT (https://github.com/isaacs/nopt/raw/master/LICENSE) ─�
 spdx-license-list (1.1.0) ── MIT License (https://spdx.org/licenses/MIT) ── node_modules/spdx-license-list/package.json
 treeify (1.0.1) ── MIT (http://lp.mit-license.org/) ── node_modules/treeify/package.json
 
-$ licensecheck --tsv | cut -f2 | sort -u
+$ licensecheck --tsv --fields license | sort -u
 MIT (http://lp.mit-license.org/)
 MIT (http://www.opensource.org/licenses/mit-license.php)
 MIT (https://github.com/isaacs/abbrev-js/raw/master/LICENSE)
 MIT (https://github.com/isaacs/nopt/raw/master/LICENSE)
 MIT License (https://spdx.org/licenses/MIT)
 zlib License (https://spdx.org/licenses/Zlib)
+
+$ licensecheck --json
+[ { name: 'abbrev',
+    version: '1.0.5',
+    license: 'MIT (https://github.com/isaacs/abbrev-js/raw/master/LICENSE)',
+    licensefile: 'node_modules/markdown/node_modules/nopt/node_modules/abbrev/package.json',
+    homepage: 'https://github.com/isaacs/abbrev-js',
+    description: 'Like ruby\'s abbrev module, but in js',
+    dependencies: '' },
+ ...
+]
 ```
 
 Overrides

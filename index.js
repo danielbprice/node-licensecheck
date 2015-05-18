@@ -1,11 +1,13 @@
 // Original based on https://github.com/shtylman/node-weaklink (with permission)
 
-var fs = require('fs')
-var path = require('path')
-var markdown = require('markdown').markdown
-var spdxLicenses = require('spdx-license-list/spdx-full')
+"use strict"
 
-var licenseDir = __dirname + "/license-files/"
+var fs = require("fs")
+var path = require("path")
+var markdown = require("markdown").markdown
+var spdxLicenses = require("spdx-license-list/spdx-full")
+
+var licenseDir = path.join(__dirname, "license-files")
 
 // Alternate abbreviations used by package.json files.
 var licenseAliases = {
@@ -14,8 +16,10 @@ var licenseAliases = {
 }
 
 var licenses = []
+var licenseIndex = {}
+
 function normalizeText(text) {
-    return text.replace(/[^a-z0-9\s]/ig, '').toLowerCase().trim().split(/[\s\n]+/).join(' ')
+    return text.replace(/[^a-z0-9\s]/ig, "").toLowerCase().trim().split(/[\s\n]+/).join(" ")
 }
 
 // Match a license body or license id against known set of licenses.
@@ -27,7 +31,7 @@ function matchLicense(licenseString) {
     // Check matches of normalized license content against signatures.
     for (var i = 0; i < licenses.length; i++) {
         var license = licenses[i]
-        var match = false;
+        var match = false
         for (var j = 0; j < license.signatures.length; j++) {
             if (normalized.indexOf(license.signatures[j]) >= 0) {
                 match = true
@@ -44,7 +48,7 @@ function matchLicense(licenseString) {
         matchingLicenses.push(licenseIndex[licenseName] || {name: licenseName, id: null})
     }
     if (matchingLicenses.length === 0) {
-        return null;
+        return null
     }
     if (matchingLicenses.length > 1) {
         console.warn("Multiple matching licenses: " + matchingLicenses.length, [licenseString, matchingLicenses])
@@ -53,7 +57,6 @@ function matchLicense(licenseString) {
 }
 
 // Attach "id" field to each license, and add a lookup for accidental variations among SPDX license ids.
-var licenseIndex = {}
 Object.keys(spdxLicenses).forEach(function (key) {
     var license = spdxLicenses[key]
     license.id = key
@@ -74,7 +77,7 @@ fs.readdirSync(licenseDir).forEach(function (name) {
     // Add all variant signatures.
     var id = name.split(",")[0]
     if (licenseIndex[id]) {
-        licenseIndex[id].signatures.push(normalizeText(fs.readFileSync(licenseDir + name, "utf8")))
+        licenseIndex[id].signatures.push(normalizeText(fs.readFileSync(path.join(licenseDir, name), "utf8")))
     } else {
         console.warn("Unrecognized license for signature: " + name)
     }
@@ -84,9 +87,9 @@ fs.readdirSync(licenseDir).forEach(function (name) {
 // If a developer specifies just the name, we check it against SPDX, according to NPM guidelines.
 // If they supply a URL, we just link to it, preserving name and exact link.
 function getJsonLicense(json) {
-    var license = 'nomatch'
-    if (typeof json === 'string') {
-        license = matchLicense(json) || 'nomatch'
+    var license = "nomatch"
+    if (typeof json === "string") {
+        license = matchLicense(json) || "nomatch"
     } else {
         if (json.url) {
             license = { name: json.type, url: json.url }
@@ -99,7 +102,7 @@ function getJsonLicense(json) {
 
 function getFileLicense(filename) {
     var fileContents = fs.readFileSync(filename, "utf8")
-    return matchLicense(fileContents) || 'nomatch'
+    return matchLicense(fileContents) || "nomatch"
 }
 
 function getReadmeLicense(filename) {
@@ -119,7 +122,7 @@ function getReadmeLicense(filename) {
 function parseMarkdownLicense(markdownText) {
     var license = getMarkdownLicenseSection(markdownText)
     return license ?
-        (matchLicense(license) || 'nomatch')
+        (matchLicense(license) || "nomatch")
         : matchLicense(markdownText)
 }
 function getMarkdownLicenseSection(text) {
@@ -129,12 +132,12 @@ function getMarkdownLicenseSection(text) {
         var node = tree[i]
 
         // Find section with "License" in the name
-        if (node[0] === 'header' && /licen[cs]e/i.test(node[2])) {
+        if (node[0] === "header" && /licen[cs]e/i.test(node[2])) {
             var section = []
             // Group together all paragraph nodes immediately after the header
             for (var j = i + 1; j < tree.length; j++) {
                 var childNode = tree[j]
-                if (childNode[0] === 'para') {
+                if (childNode[0] === "para") {
                     section.push(childNode[1])
                 } else {
                     break
@@ -142,15 +145,15 @@ function getMarkdownLicenseSection(text) {
             }
             // If we got a license, return it
             if (section.length) {
-                return section.join('\n\n')
+                return section.join("\n\n")
             }
             // Otherwise consider using the header contents itself (e.g. "MIT License")
             if (/.+licen[cs]e/i.test(node[2])) {
                 return node[2]
             }
         }
-        // Check if paragraph has 'license' in it, and use it as-is
-        if (node[0] === 'para' && /.+licen[cs]e/i.test(node[1])) {
+        // Check if paragraph has "license" in it, and use it as-is
+        if (node[0] === "para" && /.+licen[cs]e/i.test(node[1])) {
             return node[1]
         }
     }
@@ -158,7 +161,7 @@ function getMarkdownLicenseSection(text) {
 }
 
 function formatLicense(license) {
-    if (typeof license === 'string') {
+    if (typeof license === "string") {
         return license
     } else if (license.name && license.url) {
         return license.name + " (" + license.url + ")"
@@ -176,7 +179,7 @@ module.exports = function checkPath(packageName, basePath, overrides) {
         return null
     }
 
-    var packageJsonPath = path.join(basePath, 'package.json')
+    var packageJsonPath = path.join(basePath, "package.json")
 
     var packageJson = JSON.parse(fs.readFileSync(packageJsonPath))
 
@@ -192,21 +195,21 @@ module.exports = function checkPath(packageName, basePath, overrides) {
         }
     }
 
-    var license = 'unknown'
+    var license = "unknown"
     var licenseFilePath
 
     // Check package.json for "license" or "licenses" fields
     if (packageJson.license || packageJson.licenses) {
         licenseFilePath = packageJsonPath
-        var licenses = packageJson.licenses || []
-        if (!Array.isArray(licenses)) {
+        var pkgLicenses = packageJson.licenses || []
+        if (!Array.isArray(pkgLicenses)) {
             // Bad JSON, using "licenses" not as an array
-            licenses = [licenses]
+            pkgLicenses = [pkgLicenses]
         }
         if (packageJson.license) {
-            licenses.push(packageJson.license)
+            pkgLicenses.push(packageJson.license)
         }
-        license = licenses.map(getJsonLicense).map(formatLicense).join(', ')
+        license = pkgLicenses.map(getJsonLicense).map(formatLicense).join(", ")
     } else {
         // Look for file with "license" or "copying" in its name
         var files = fs.readdirSync(basePath)
@@ -231,7 +234,7 @@ module.exports = function checkPath(packageName, basePath, overrides) {
                         if (result) {
                             license = formatLicense(result)
                             licenseFilePath = file
-                            return license !== 'nomatch'
+                            return license !== "nomatch"
                         }
                     }
                 }
@@ -244,7 +247,7 @@ module.exports = function checkPath(packageName, basePath, overrides) {
     var dependencies = []
 
     Object.keys(packageJson.dependencies || {}).sort().forEach(function (name) {
-        var res = checkPath(name, path.join(basePath, 'node_modules', name), overrides)
+        var res = checkPath(name, path.join(basePath, "node_modules", name), overrides)
         if (res) {
             res.name = name
             res.deps = res.deps || []
@@ -254,9 +257,9 @@ module.exports = function checkPath(packageName, basePath, overrides) {
 
     return {
         name: packageJson.name,
-        version: packageJson.version,
         license: license,
         licenseFile: licenseFilePath,
-        deps: dependencies
+        deps: dependencies,
+        packageInfo: packageJson
     }
 }
