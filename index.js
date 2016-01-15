@@ -4,6 +4,7 @@
 
 var fs = require("fs")
 var path = require("path")
+var util = require("util")
 var markdown = require("markdown").markdown
 var spdxLicenses = require("spdx-license-list/spdx-full")
 
@@ -87,17 +88,24 @@ fs.readdirSync(licenseDir).forEach(function (name) {
 // If a developer specifies just the name, we check it against SPDX, according to NPM guidelines.
 // If they supply a URL, we just link to it, preserving name and exact link.
 function getJsonLicense(json) {
-    var license = "nomatch"
-    if (typeof json === "string") {
-        license = matchLicense(json) || "nomatch"
-    } else {
-        if (json.url) {
-            license = { name: json.type, url: json.url }
+    try {
+        var license = "nomatch"
+        if (typeof json === "string") {
+            license = matchLicense(json) || "nomatch"
         } else {
-            license = matchLicense(json.type)
+            if (json.url && json.type) {
+                license = { name: json.type, url: json.url }
+            } else if (json.type) {
+                license = matchLicense(json.type)
+            } else {
+                throw Error("license object is missing 'type' field")
+            }
         }
+        return license
+    } catch (err) {
+        console.error("Failed processing license: '" + util.inspect(json) + "': " + err.message)
+        return "unknown"
     }
-    return license
 }
 
 function getFileLicense(filename) {
@@ -207,7 +215,12 @@ module.exports = function checkPath(packageName, basePath, overrides) {
             pkgLicenses = [pkgLicenses]
         }
         if (packageJson.license) {
-            pkgLicenses.push(packageJson.license)
+            // Bad: using "license" as array
+            if (Array.isArray(packageJson.license)) {
+                pkgLicenses = packageJson.license
+            } else {
+                pkgLicenses.push(packageJson.license)
+            }
         }
         license = pkgLicenses.map(getJsonLicense).map(formatLicense).join(", ")
     } else {

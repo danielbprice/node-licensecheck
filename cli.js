@@ -142,7 +142,7 @@ function main() {
         Object.keys(dependencies).sort().forEach(function (key) {
             jsonOutputArray.push(dependencies[key])
         })
-        console.log(jsonOutputArray)
+        console.log(JSON.stringify(jsonOutputArray, null, "\t"))
     } else if (opts.flat) {
         dependencies = makeFlatDependencyMap(licensecheck(".", path, overrides))
         Object.keys(dependencies).sort().forEach(function (key) {
