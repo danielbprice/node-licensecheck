@@ -8,30 +8,29 @@ var util = require("util")
 var markdown = require("markdown").markdown
 var spdxLicenses = require("spdx-license-list/spdx-full")
 
+var normalizeText = require("./normtext")
 var licenseDir = path.join(__dirname, "license-files")
 
 // Alternate abbreviations used by package.json files.
 var licenseAliases = {
     "BSD": "BSD-2-Clause",
-    "MIT/X11": "MIT"
+    "MIT/X11": "MIT",
+    "apache version 2.0": "Apache-2.0"
 }
 
 var licenses = []
 var licenseIndex = {}
-
-function normalizeText(text) {
-    return text.replace(/[^a-z0-9\s]/ig, "").toLowerCase().trim().split(/[\s\n]+/).join(" ")
-}
 
 // Match a license body or license id against known set of licenses.
 function matchLicense(licenseString) {
     // Find all textual matches on license text.
     var normalized = normalizeText(licenseString)
     var matchingLicenses = []
+    var license = null
 
     // Check matches of normalized license content against signatures.
     for (var i = 0; i < licenses.length; i++) {
-        var license = licenses[i]
+        license = licenses[i]
         var match = false
         for (var j = 0; j < license.signatures.length; j++) {
             if (normalized.indexOf(license.signatures[j]) >= 0) {
@@ -45,8 +44,14 @@ function matchLicense(licenseString) {
     }
     // For single-line license, check if it's a known license id.
     if (matchingLicenses.length === 0 && !/[\n\f\r]/.test(licenseString) && licenseString.length < 100) {
-        var licenseName = licenseString.trim()
-        matchingLicenses.push(licenseIndex[licenseName] || {name: licenseName, id: null})
+        var licenseName = normalizeText(licenseString)
+        // If there's an extra "license" on the end of the name, drop it ("MIT License" -> "MIT").
+        license = licenseIndex[licenseName] || licenseIndex[licenseName.replace(/ licen[sc]e$/, "")]
+        if (!license) {
+            license = {name: licenseName, id: null}
+            console.warn("Non-matched license name: " + licenseName)
+        }
+        matchingLicenses.push(license)
     }
     if (matchingLicenses.length === 0) {
         return null
@@ -64,13 +69,13 @@ Object.keys(spdxLicenses).forEach(function (key) {
     license.signatures = [normalizeText(license.license)]
 
     licenses.push(license)
-
     licenseIndex[key] = license
     licenseIndex[normalizeText(key)] = license
 })
 
 Object.keys(licenseAliases).forEach(function (alias) {
     licenseIndex[alias] = licenseIndex[licenseAliases[alias]]
+    licenseIndex[normalizeText(alias)] = licenseIndex[licenseAliases[alias]]
 })
 
 // Read source licenses from license-files directory
