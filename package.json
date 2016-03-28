@@ -27,7 +27,7 @@
     "scripts": {
         "test":"./node_modules/.bin/eslint *.js && ./node_modules/.bin/mocha"
     },
-    "license": "zlib",
+    "license": "Zlib",
     "bin": {
         "licensecheck": "./bin/licensecheck"
     }
