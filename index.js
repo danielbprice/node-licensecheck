@@ -98,6 +98,14 @@ function getJsonLicense(json) {
         if (typeof json === "string") {
             license = matchLicense(json) || "nomatch"
         } else {
+            // All of the below cases are for deprecated forms according to
+            // https://docs.npmjs.com/files/package.json
+
+            // Special case; seen only rarely, e.g. v8-debug@0.7.1
+            if (json.name && !json.type) {
+                json.type = json.name
+            }
+
             if (json.url && json.type) {
                 license = { name: json.type, url: json.url }
             } else if (json.type) {
